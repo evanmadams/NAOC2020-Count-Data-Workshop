@@ -39,6 +39,7 @@ y <- left_join(y, ds, 'site')
 #turn NAs in the merge into true zeroes as NA means that no birds from this species was detected
 y[is.na(y)] <- 0
 
+
 #pull in covariates that describe either abundance or detection probability
 #these include habitat data and conditions under which the survey was conducted 
 #Note that the wind speed, sky condition and background noise are categorical and the date/time data are scaled continuous
@@ -68,10 +69,45 @@ hist(rowSums(umf@y))
 hist(rpois(nrow(umf@y), mean(rowSums(umf@y))))
 
 
-#now we want to run the distance model using 'distsamp'
+#next, let's look at these distance data because these are the foundation for how we estimate detection probability
+
+barplot(colSums(y[,2:6]), ylab = 'Counts', xlab = 'Distance Band')
+
+#well that doesn't look like it's going down with distance, what gives?
+#the area of each distance band is also increasing because it's a circle (pi *r^2 makes the outer bands larger)
+bandarea <- c( (pi * 20^2), (pi * 40^2) - (pi * 20^2), (pi * 60^2) - (pi * 40^2), (pi * 80^2) - (pi * 60^2), (pi * 100^2) - (pi * 80^2) )
+
+barplot(bandarea, ylab = 'Area', xlab = 'Distance Band')
+
+#so the area covered by the outer bands is significantly larger than the inner bands
+#when we correct the counts for this pattern, this is what we see
+
+barplot(colSums(y[,2:6])/bandarea, ylab = 'Count/Area', xlab = 'Distance Band')
+
+#okay, that looks a bit more like what we expected. Now we just have to find a function that fits that decrease
+
+
+#now we want to run a distance model using 'distsamp' in unmarked
 #the first element of the function needs a model formula that is similar to what we were using only we need multiple formulas for the distance model and the ecological model
-#here we are running a null model with covariates on either submodel
 #we also designate how we want to model the detection probability over distance (a half-normal distribution in this case)
+
+#briefly, this is what a half-normal curve looks like, where y is >= 0
+
+dhalfnorm <- function(y, sigma){
+  
+  out <- (sqrt(2)/(sigma * sqrt(pi))) * exp(-1 * (y^2/(2 * sigma^2)))
+  return(out)
+  
+}
+
+barplot(dhalfnorm(y = 0:100, sigma = 40))
+
+
+#so we are saying that we think that dropoff with distance looks like this -- the positive have a Gaussian curve
+
+#so let's try it out
+#here we are running a null model with covariates on either submodel
+
 fm <- distsamp(~1 ~1, data = umf, keyfun = 'halfnorm', output = 'density')
 
 summary(fm)
@@ -259,5 +295,5 @@ hist(fm2, xlab = 'Distance (m)')
 hist(fm3, xlab = 'Distance (m)')
 hist(fm4, xlab = 'Distance (m)')
 
-                            
+
 ###END LESSON###
