@@ -94,15 +94,36 @@ beta1
 
 #We can now plot the predicted response between the covariates and 
 #abundance
-veg.plot=seq(min(vegHt),max(vegHt),length=100)
+veg.plot=data.frame(vegHt=seq(min(vegHt),max(vegHt),length=100))
+veg.pred <- predict(fm.nmix1,newdata=veg.plot,type="state")
+veg.plot<- data.frame(veg.plot,veg.pred)
 
-plot(veg.plot,exp(beta1[1] + beta1[2]*veg.plot),type="l",
-     xlab="vegetation height", ylab="Expected Abundance")
+library(ggplot2)
 
-#or covariates and detection probability (logit link)
-wind.plot=seq(min(wind),max(wind),length=300)
-plot(wind.plot,(1/(1+exp(-(beta1[3]+beta1[4]*wind.plot)))),type="l",
-     xlab="Wind Speed",ylab="Detection Probability")
+ggplot(veg.plot, aes(x=vegHt,y=Predicted,ymin=lower,ymax=upper)) + 
+  geom_line() + 
+  theme_bw() + 
+  theme(panel.grid.major = element_blank(), panel.grid.minor=element_blank(),
+        panel.background=element_blank(),
+        axis.line=element_line(colour="black"),
+        axis.text=element_text(size=15),axis.title=element_text(size=20)) +
+  xlab("Vegetation Height") + ylab("Expected Abundance")
+
+#or covariates and detection probability
+wind.plot=data.frame(wind=seq(min(wind),max(wind),length=300))
+wind.pred<-predict(fm.nmix1,newdata=wind.plot,type="det")
+wind.plot<-data.frame(wind.plot,wind.pred)
+
+ggplot(wind.plot, aes(x=wind,y=Predicted,ymin=lower,ymax=upper)) + 
+  geom_line(aes(y=Predicted)) + geom_line(aes(y=lower)) + 
+  geom_line(aes(y=upper)) +
+  theme_bw() + 
+  theme(panel.grid.major = element_blank(), panel.grid.minor=element_blank(),
+        panel.background=element_blank(),
+        axis.line=element_line(colour="black"),
+        axis.text=element_text(size=15),axis.title=element_text(size=20)) +
+  xlab("Wind Speed (km/hr)") + ylab("Detection Probability")
+
 
 # Or suppose you want predictions for new values of vegHt, say 1.2 and 3.1
 newdat <- data.frame(vegHt=c(3.1,5))
@@ -135,17 +156,52 @@ nobo.1 <- pcount(~sky + jdate + time ~BA + Evergreen5km,
                  data=nobo.umf,K=105) 
 summary(nobo.1)
 
-nobo.coef <- coef(nobo.1) #coef() extracts coefficients from the nmix model
-nobo.coef
-
 #We can now plot the predicted response between the covariates and 
 #abundance
-BA.plot=seq(min(scale(nobo[,6])),max(scale(nobo[,6])),length=100)
+BA.plot=data.frame(BA=seq(min(scale(nobo[,6])),max(scale(nobo[,6]))),
+                   Evergreen5km=0)
 
-plot(BA.plot,exp(nobo.coef[1] + nobo.coef[2]*BA.plot),type="l",
-     xlab="Basal Area", ylab="Expected Abundance")
+nobo.pred=predict(nobo.1,newdata=BA.plot,type="state")
 
-sky.plot=seq(min(scale(nobo[,11:13])),max(scale(nobo[,11:13])),length=100)
+BA.plot <- data.frame(nobo.pred,BA.plot)
 
-plot(sky.plot,(1/(1+exp(-(nobo.coef[3]+nobo.coef[4]*sky.plot)))),type="l",
-     xlab="Sky Cover",ylab="Detection Probability")
+nobo.plot <- ggplot(data=BA.plot,aes(x=BA,y=Predicted,ymin=lower,ymax=upper))
+nobo.plot <- nobo.plot + geom_line(aes(x=BA,y=Predicted))
+nobo.plot <- nobo.plot + geom_line(aes(x=BA,y=lower),color=2) +
+  geom_line(aes(x=BA,y=upper),color=2)
+nobo.plot <- nobo.plot + theme_bw() + ylab("Predicted Abundance")
+plot(nobo.plot)
+
+#### Challenge ####
+
+#How many bobwhites were there overall?
+
+#How many bobwhites would you expect to see at a site with a BA of -3
+# and evergreen5km of 0? How does the error of this estimate change?
+
+#How would we create a plot to look at the effect of wind 
+# on detection probability?
+
+
+## Answers
+
+#Total bobwhite
+sum(bup(ranef(nobo.1)))
+
+#Prediction at particular point
+newdat <- data.frame(BA=-3,Evergreen5km=0)
+predict(nobo.1, type="state", newdata=newdat) #Note the high SE!
+
+#plot for detection probability and wind
+sky.plot=data.frame(sky=seq(min(scale(nobo[,11:13])),max(scale(nobo[,11:13])),length=100),
+                    jdate=0,time=0)
+
+p.pred <- predict(nobo.1,newdata=sky.plot,type="det")
+
+sky.plot<-data.frame(sky.plot,p.pred)
+
+p.plot <- ggplot(data=sky.plot,aes(x=sky,y=Predicted,ymin=lower,ymax=upper)) 
+p.plot <- p.plot + geom_line(aes(x=sky,y=Predicted)) + 
+  geom_line(aes(y=lower),color=2) + geom_line(aes(y=upper),color=2)
+p.plot <- p.plot + theme_bw() + ylab("Detection Probability")
+plot(p.plot)
