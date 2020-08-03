@@ -37,9 +37,8 @@ plot(vegHt, N, xlab="Vegetation height", ylab="Abundance (N)")
 
 glm1.est <- coef(fm.glm1) #returns intercept and vegHt beta coefficients. should be around -1 and 2.
 
-
-plot(function(x) exp(-1 + 2*x), 1, 3, add=TRUE, lwd=3)
-plot(function(x) exp(glm1.est[1] + glm1.est[2]*x), 1, 3, add=TRUE,
+lines(sort(vegHt), exp(-1 +2*sort(vegHt), add=TRUE, lwd=3)
+lines(sort(vegHt), exp(glm1.est[1] + glm1.est[2]*sort(vegHt)), add=TRUE,
      lwd=3, col="blue")
 legend(1, 20, c("Truth", "Estimate"), col=c("black", "blue"), lty=1,
        lwd=3)
