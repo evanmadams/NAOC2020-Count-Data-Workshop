@@ -2,9 +2,7 @@
 #By Evan Adams and Beth Ross
 ###########################################################
 
-library(countreg)
-
-#Not a lot of code here, just showing how we created the distributions shown in the ppt
+#Not a lot of code here, just showing how we created the distributions shown in the presentation
 
 #coin flipping
 
@@ -36,13 +34,13 @@ hist(rpois(100, 3))
 
 #probability mixtures
 
-#showing two gaussians
+#showing two unmixed gaussians
 hist(c(rnorm(100, -25, 3), rnorm(100, 25, 7)), freq = FALSE, breaks = -50:50)
 
 #then combining two gaussians
 hist(c(rnorm(100, -25, 3) + rnorm(100, 25, 7)), freq = FALSE, breaks = -50:50)
 
-#now let's creat a zero-inflated poisson
+#now let's create a zero-inflated poisson
 
 hist(rpois(100, 4))
 
@@ -60,6 +58,5 @@ hist(rzipois(100, 0.9, 4))
 #negative binomial
 
 hist(rnbinom(100, mu = 4, size = 1.4))
-
 
 
